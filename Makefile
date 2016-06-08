@@ -1,27 +1,42 @@
-.PHONY:clean
-CC=clang++
+.PHONY=clean
+CPP=clang++
+SRC=src/
+OBJ=obj/
+BIN=bin/
+TEST=test
+TEST_BIN=test_bin
+DIR=$(shell pwd)/include
+SOURCES=$(addprefix $(SRC), triangle.cpp util.cpp sphere.cpp)
+OBJECTS := $(patsubst $(SRC)%.cpp, $(OBJ)%.o, $(SOURCES))
+CPP_FLAGS= -I$(DIR) -Wall -Wno-unused-function -g -std=c++11 -stdlib=libc++ -I/opt/local/include/opencv -I/opt/local/include
+MAIN=ray-tracer
+LD_FLAGS=\
+-L/opt/local/lib -lopencv_shape -lopencv_stitching -lopencv_objdetect -lopencv_superres -lopencv_videostab -lopencv_calib3d -lopencv_features2d -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs -lopencv_video -lopencv_photo -lopencv_ml -lopencv_imgproc -lopencv_flann -lopencv_core -lopencv_hal
+EXEC=$(BIN)$(MAIN)
+MAIN_SRC=$(SRC)$(MAIN).cpp
+TEST_FLAGS=-lgtest_main -lgtest -lpthread
+UNAME := $(shell uname)
 
-CV_CPPFLAGS=-I/opt/local/include/opencv -I/opt/local/include
-CV_LDFLAGS=-L/opt/local/lib -lopencv_shape -lopencv_stitching -lopencv_objdetect -lopencv_superres -lopencv_videostab -lopencv_calib3d -lopencv_features2d -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs -lopencv_video -lopencv_photo -lopencv_ml -lopencv_imgproc -lopencv_flann -lopencv_core -lopencv_hal
+TEST_SRCS=$(wildcard $(TEST)/*.cpp)
+TESTS := $(patsubst $(TEST)/%.cpp, $(TEST_BIN)/%, $(TEST_SRCS))
 
-CCFLAGS= -std=c++11 $(CV_CPPFLAGS)
+all: $(SOURCES) $(EXEC)
+test: $(TESTS) run_tests
 
-LDFLAGS=$(CV_LDFLAGS)
+run_tests:
+	$(foreach x,$(TESTS),./$(x);)
 
-default: ray-tracer
+$(OBJECTS): obj/%.o: src/%.cpp
+	$(CPP) $(CPP_FLAGS) -c $< -o $@
 
-ray-tracer.o: ray-tracer.cpp ray-tracer.h
-	$(CC) -c ray-tracer.cpp -o ray-tracer.o $(CCFLAGS)
+$(TESTS): $(TEST_BIN)/%: $(TEST)/%.cpp $(OBJECTS)
+	$(CPP) $(CPP_FLAGS) $(OBJECTS) $< -o $@ $(TEST_FLAGS) $(LD_FLAGS)
 
-ray-tracer: ray-tracer.o
-	$(CC) $(LDFLAGS) ray-tracer.o -o ray-tracer $(MAGIK_CCFLAGS)
+$(EXEC): $(MAIN_SRC) $(OBJECTS)
+	$(CPP) $(CPP_FLAGS) $(OBJECTS) $< -o $@ $(LD_FLAGS)
 
-test-util:
-	$(CC) -c test-util.cpp -o test-util.o $(CCFLAGS)
-	$(CC) $(LDFLAGS) test-util.o -o test $(MAGIK_CCFLAGS)
 
 clean:
-	rm -f ray-tracer.o
-	rm -f test-util.o
-	rm -f ray-tracer
-	rm -f test
+	rm -f $(OBJECTS)
+	rm -rf $(TEST_BIN)/*
+

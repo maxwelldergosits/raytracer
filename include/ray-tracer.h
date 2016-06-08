@@ -2,7 +2,8 @@
 #define _RAY_TRACER_H_
 
 #include<vector>
-#include"util.h"
+#include "util.h"
+#include "triangle.h"
 
 namespace MD {
 
@@ -12,7 +13,7 @@ namespace MD {
   };
 
   struct raytracer {
-    std::vector<sphere> objects;
+    std::vector<shape*> objects;
     std::vector<lightsource> sources;
     vec3 location;
     vec3 basis[3];
